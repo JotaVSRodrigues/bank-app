@@ -1,6 +1,7 @@
 package org.example;
 
 import org.example.guis.LoginGui;
+import org.example.guis.RegisterGui;
 
 import javax.swing.*;
 
@@ -11,7 +12,7 @@ public class AppLauncher
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                new LoginGui().setVisible(true);
+                new RegisterGui().setVisible(true);
             }
         });
     }
