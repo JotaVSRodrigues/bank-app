@@ -1,7 +1,12 @@
 package org.example.guis;
 
+import org.example.database.DBConnection;
+import org.example.objects.User;
+
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class RegisterGui extends BaseFrame {
 
@@ -57,12 +62,40 @@ public class RegisterGui extends BaseFrame {
         JButton registerButton = new JButton("Register");
         registerButton.setBounds(20, 460, getWidth() - 50, 40);
         registerButton.setFont(new Font("Dialog", Font.BOLD, 20));
+        registerButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                String username = usernameField.getText();
+                String password = String.valueOf(passwordField);
+
+                DBConnection conn = new DBConnection();
+                User user = DBConnection.validateLogin(username, password);
+
+                if (username == user.getUsername()) {
+                    JOptionPane.showMessageDialog(null, "This username is already in use.");
+                } else if (usernameField == null && passwordField == null) {
+                    JOptionPane.showMessageDialog(null, "Some field of your registering is still null.");
+                } else {
+                    conn.registerAccount(username, password);
+                }
+            }
+        });
         add(registerButton);
 
         JLabel loginLabel = new JLabel("<html><a href=\"#\">Have an account? Sign-in here</a></html>");
         loginLabel.setBounds(0, 510, getWidth() - 10, 30);
         loginLabel.setFont(new Font("Dialog", Font.PLAIN, 20));
         loginLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        loginLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                // dispose the actual frame
+                RegisterGui.this.dispose();
+
+                // go to the login frame
+                new LoginGui().setVisible(true);
+            }
+        });
         add(loginLabel);
     }
 }

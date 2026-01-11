@@ -1,6 +1,6 @@
 package org.example.guis;
 
-import org.example.db_objs.User;
+import org.example.objects.User;
 
 import javax.swing.*;
 /*

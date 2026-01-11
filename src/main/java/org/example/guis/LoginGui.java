@@ -1,7 +1,14 @@
 package org.example.guis;
 
+import org.example.database.DBConnection;
+import org.example.objects.User;
+
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 /*
     This gui will allow user to login or launch the register gui
@@ -61,6 +68,37 @@ public class LoginGui extends BaseFrame {
         JButton loginButton = new JButton("Login");
         loginButton.setBounds(20, 460, getWidth() - 50, 40);
         loginButton.setFont(new Font("Dialog", Font.BOLD, 20));
+        loginButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // get username
+                String username = usernameField.getText();
+
+                // get password
+                String password = String.valueOf(passwordField.getPassword());
+
+                // validate login
+                User user = DBConnection.validateLogin(username, password);
+
+                // if user is null it means invalid, otherwise it is a valid account
+                if (user != null) {
+                    // means valid login
+
+                    // dispose the gui
+                    LoginGui.this.dispose();
+
+                    // launch back app gui
+                    BankingAppGui bankingAppGui = new BankingAppGui(user);
+                    bankingAppGui.setVisible(true);
+
+                    // show suces dialog
+                    JOptionPane.showMessageDialog(bankingAppGui, "You login was a sucess!");
+                } else {
+                    // invalid login
+                    JOptionPane.showMessageDialog(LoginGui.this, "Login failed...");
+                }
+            }
+        });
         add(loginButton);
 
         // create register label
@@ -68,6 +106,18 @@ public class LoginGui extends BaseFrame {
         registerLabel.setBounds(0, 510, getWidth() - 10, 30);
         registerLabel.setFont(new Font("Dialog", Font.PLAIN, 20));
         registerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        // adds an event listener so when the mouse is clicked it will launch the register gui
+        registerLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                // dispose of this gui
+                LoginGui.this.dispose();
+
+                // launch the register gui
+                new RegisterGui().setVisible(true);
+            }
+        });
         add(registerLabel);
     }
 }
