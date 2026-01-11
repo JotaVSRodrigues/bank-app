@@ -1,5 +1,7 @@
 package org.example.guis;
 
+import org.example.db_objs.User;
+
 import javax.swing.*;
 /*
     Creating an abstract class helps us setup the blueprint that our GUIs will follow, for example
@@ -7,7 +9,14 @@ import javax.swing.*;
     which will be unique to each subclass
 */
 public abstract class BaseFrame extends JFrame {
+    protected User user;
+
     public BaseFrame(String title) {
+        initialize(title);
+    }
+
+    public BaseFrame(String title, User user) {
+        this.user = user;
         initialize(title);
     }
 
