@@ -1,6 +1,7 @@
 package org.example.database;
 
 import org.example.guis.RegisterGui;
+import org.example.objects.Transaction;
 import org.example.objects.User;
 
 import javax.swing.*;
@@ -57,7 +58,7 @@ public class DBConnection {
     // true - register sucess
     // false - register fails
     public static boolean register(String username, String password) {
-        String query = "INSERT INTO users (username, password) VALUES (?, ?)";
+        String query = "INSERT INTO users (username, password, current_balance) VALUES (?, ?, ?)";
         try {
             // first we will need to check if the username has already been taken
             if (!chekcUser(username)) {
@@ -66,6 +67,7 @@ public class DBConnection {
 
                 statement.setString(1, username);
                 statement.setString(2, password);
+                statement.setBigDecimal(3, new BigDecimal(0));
 
                 statement.executeUpdate();
                 return true;
@@ -95,25 +97,109 @@ public class DBConnection {
         return true;
     }
 
+    // true - update to db was a success
+    // false - update to the db was a fail
+    public static boolean addTransactionToDatabase(Transaction transaction) {
+        String query = "INSERT INTO transactions (user_id, transaction_type, transaction_amount, transaction_date) " +
+                "VALUES (?, ?, ?, NOW())";
 
-//    public void registerAccount(String username, String password) {
-//        String query = "INSERT INTO users (username, password, current_balance) VALUES (?, ?, ?)";
-//
-//        int userId = 0;
-//        BigDecimal initialCurrent = new BigDecimal(0);
-//
-//        User user = new User(userId, username, password, initialCurrent);
-//        try {
-//            Connection conn = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);
-//            PreparedStatement statement = conn.prepareStatement(query);
-//
-//            statement.setString(1, user.getUsername());
-//            statement.setString(2, user.getPassword());
-//            statement.setBigDecimal(3, user.getCurrentBalance());
-//
-//            statement.executeQuery();
-//        } catch (SQLException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
+        try {
+            Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);
+            PreparedStatement insertTransaction = connection.prepareStatement(query);
+
+            // NOW() will put in the current date
+
+            insertTransaction.setInt(1, transaction.getUserId());
+            insertTransaction.setString(2, transaction.getTransactionType());
+            insertTransaction.setBigDecimal(3, transaction.getTransactionAmount());
+
+            insertTransaction.executeUpdate();
+
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    // true - update balance successful
+    // false - update balance fail
+    public static boolean updateCurrentBalance(User user) {
+        String query = "UPDATE users SET current_balance = ? WHERE id = ?";
+        try {
+            Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);
+            PreparedStatement updateBalance = connection.prepareStatement(query);
+
+            updateBalance.setBigDecimal(1, user.getCurrentBalance());
+            updateBalance.setInt(2, user.getId());
+
+            updateBalance.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    // true - transfer was a success
+    // false - transfer failed
+    public static boolean transfer(User user, String transferredUsername, float transferredAmount) {
+        String query = "SELECT * FROM users WHERE username = ?";
+        try {
+            Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);
+            PreparedStatement queryUser = connection.prepareStatement(query);
+
+            queryUser.setString(1, transferredUsername);
+            ResultSet resultSet = queryUser.executeQuery();
+
+            while (resultSet.next()) {
+                // perform transfer
+                User transferredUser = new User(
+                        resultSet.getInt("id"),
+                        transferredUsername,
+                        resultSet.getString("password"),
+                        resultSet.getBigDecimal("current_balance")
+                );
+
+                // create transaction
+                Transaction transfereTransaction = new Transaction(
+                        user.getId(),
+                        "Transfer",
+                        new BigDecimal(-transferredAmount),
+                        null
+                );
+
+                // this transaction will belong to the transferred user
+                Transaction receivedTransaciton = new Transaction(
+                        transferredUser.getId(),
+                        "Transfer",
+                        new BigDecimal(transferredAmount),
+                        null
+                );
+
+                // update transfer user
+                transferredUser.setCurrentBalance(transferredUser.
+                        getCurrentBalance().add(BigDecimal.valueOf(transferredAmount)));
+                updateCurrentBalance(transferredUser);
+
+                // update user current balance
+                user.setCurrentBalance(user.
+                        getCurrentBalance().add(BigDecimal.valueOf(-transferredAmount)));
+                updateCurrentBalance(user);
+
+                // add these transactions to the database
+                addTransactionToDatabase(transfereTransaction);
+                addTransactionToDatabase(receivedTransaciton);
+
+                return true;
+
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
 }
