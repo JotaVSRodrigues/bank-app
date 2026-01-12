@@ -53,24 +53,67 @@ public class DBConnection {
         return null;
     }
 
-    public void registerAccount(String username, String password) {
-        String query = "INSERT INTO users (username, password, current_balance) VALUES (?, ?, ?)";
-
-        int userId = 0;
-        BigDecimal initialCurrent = new BigDecimal(0);
-
-        User user = new User(userId, username, password, initialCurrent);
+    // register new user to the database
+    // true - register sucess
+    // false - register fails
+    public static boolean register(String username, String password) {
+        String query = "INSERT INTO users (username, password) VALUES (?, ?)";
         try {
-            Connection conn = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);
-            PreparedStatement statement = conn.prepareStatement(query);
+            // first we will need to check if the username has already been taken
+            if (!chekcUser(username)) {
+                Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);
+                PreparedStatement statement = connection.prepareStatement(query);
 
-            statement.setString(1, user.getUsername());
-            statement.setString(2, user.getPassword());
-            statement.setBigDecimal(3, user.getCurrentBalance());
+                statement.setString(1, username);
+                statement.setString(2, password);
 
-            statement.executeQuery();
+                statement.executeUpdate();
+                return true;
+            }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
         }
+        return false;
     }
+
+    // check if username already exists in the db
+    // true - user exists
+    // false - user doesn't exists
+    private static boolean chekcUser(String username) {
+        String query = "SELECT * FROM users WHERE username = ?";
+        try {
+            Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);
+            PreparedStatement statement = connection.prepareStatement(query);
+
+            statement.setString(1, username);
+            ResultSet resultSet = statement.executeQuery();
+
+            if (!resultSet.next()) return false;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+
+
+//    public void registerAccount(String username, String password) {
+//        String query = "INSERT INTO users (username, password, current_balance) VALUES (?, ?, ?)";
+//
+//        int userId = 0;
+//        BigDecimal initialCurrent = new BigDecimal(0);
+//
+//        User user = new User(userId, username, password, initialCurrent);
+//        try {
+//            Connection conn = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);
+//            PreparedStatement statement = conn.prepareStatement(query);
+//
+//            statement.setString(1, user.getUsername());
+//            statement.setString(2, user.getPassword());
+//            statement.setBigDecimal(3, user.getCurrentBalance());
+//
+//            statement.executeQuery();
+//        } catch (SQLException e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
 }
