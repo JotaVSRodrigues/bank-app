@@ -10,6 +10,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 
 public class BankingAppDialog extends JDialog implements ActionListener {
     private BankingAppGui bankingAppGui;
@@ -17,6 +18,8 @@ public class BankingAppDialog extends JDialog implements ActionListener {
     private JLabel balanceLabel, enterAmountLabel, enterUserLabel;
     private JTextField enterAmountField, enterUserField;
     private JButton actionButton;
+    private JPanel pastTransactionPanel;
+    private ArrayList<Transaction> pastTransactions;
 
     public BankingAppDialog(BankingAppGui bankingAppGui, User user) {
         // set the size
@@ -92,6 +95,61 @@ public class BankingAppDialog extends JDialog implements ActionListener {
         add(enterUserField);
     }
 
+    public void addPastTransactionComponents(){
+        // container where we will store each transaction
+        pastTransactionPanel = new JPanel();
+
+        // make layout 1x1
+        pastTransactionPanel.setLayout(new BoxLayout(pastTransactionPanel, BoxLayout.Y_AXIS));
+
+        // add scrollability to the container
+        JScrollPane scrollPane = new JScrollPane(pastTransactionPanel);
+
+        // displays the vertical scroll only when it is required
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        scrollPane.setBounds(0, 20, getWidth() - 15, getHeight() - 15);
+
+        // perform db call to retrieve all of the past transaction and store into array list
+        pastTransactions = DBConnection.getPastTransaction(user);
+
+        // iterate through the list and add to the gui
+        for (int i = 0; i < pastTransactions.size(); i++) {
+            // store current transaction
+            Transaction pastTransaction = pastTransactions.get(i);
+
+            // create a container to store an individual transaction
+            JPanel pastTransactionContainer = new JPanel();
+            pastTransactionContainer.setLayout(new BorderLayout());
+
+            // create transaction type label
+            JLabel transactionTypeLabel = new JLabel(pastTransaction.getTransactionType());
+            transactionTypeLabel.setFont(new Font("Dialog", Font.BOLD, 20));
+
+            // create transaction amount label
+            JLabel transactionAmountLabel = new JLabel(String.valueOf(pastTransaction.getTransactionAmount()));
+            transactionAmountLabel.setFont(new Font("Dialog", Font.BOLD, 20));
+
+            // create transaction date label
+            JLabel transactionDateLabel = new JLabel(String.valueOf(pastTransaction.getTransactionDate()));
+            transactionDateLabel.setFont(new Font("Dialog", Font.BOLD, 20));
+
+            // add to the container
+            pastTransactionContainer.add(transactionTypeLabel, BorderLayout.WEST); // place this on the west side
+
+
+        }
+
+//        for (Transaction transaction : pastTransactions) {
+//
+//            // create a container to store an individual transaction
+//            JPanel pastTransactionContainer = new JPanel();
+//            pastTransactionContainer.setLayout(new BorderLayout());
+//
+//            // create
+//        }
+    }
+
     private void handleTransaction(String transactionType, float amountVal) {
         Transaction transaction;
 
@@ -142,7 +200,15 @@ public class BankingAppDialog extends JDialog implements ActionListener {
     }
 
     private void handleTransfer(User user, String transferredUser, float amount){
-
+        // attempt to perform transfer
+        if (DBConnection.transfer(user, transferredUser, amount)){
+            // show sucess dialog
+            JOptionPane.showMessageDialog(this, "Transfer Sucess!");
+            resetFieldsAndUpdateCurrentBalance();
+        } else {
+            // show failure dialog
+            JOptionPane.showMessageDialog(this, "Transfer Failed.");
+        }
     }
 
     @Override
@@ -177,6 +243,7 @@ public class BankingAppDialog extends JDialog implements ActionListener {
                 String transferredUser = enterUserField.getText();
 
                 // handle transfer
+                handleTransfer(user, transferredUser, amountVal);
             }
         }
     }

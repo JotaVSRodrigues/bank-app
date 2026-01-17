@@ -120,6 +120,8 @@ public class BankingAppGui extends BaseFrame implements ActionListener {
             }
 
             bankingAppDialog.setVisible(true);
+        } else if (buttonPressed.equalsIgnoreCase("Past Transaction")) {
+            
         }
     }
 }

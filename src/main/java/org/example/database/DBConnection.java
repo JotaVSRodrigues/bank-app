@@ -7,6 +7,7 @@ import org.example.objects.User;
 import javax.swing.*;
 import java.math.BigDecimal;
 import java.sql.*;
+import java.util.ArrayList;
 
 public class DBConnection {
     public static final String DB_URL = "jdbc:mysql://localhost:3306/bankapp";
@@ -145,7 +146,8 @@ public class DBConnection {
 
     // true - transfer was a success
     // false - transfer failed
-    public static boolean transfer(User user, String transferredUsername, float transferredAmount) {
+
+    public static boolean transfer(User user, String transferredUsername, float transferAmount) {
         String query = "SELECT * FROM users WHERE username = ?";
         try {
             Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);
@@ -164,37 +166,26 @@ public class DBConnection {
                 );
 
                 // create transaction
-                Transaction transfereTransaction = new Transaction(
-                        user.getId(),
-                        "Transfer",
-                        new BigDecimal(-transferredAmount),
-                        null
-                );
+                Transaction transaction = new Transaction(user.getId(), "Transfer",
+                  new BigDecimal(-transferAmount), null);
 
                 // this transaction will belong to the transferred user
-                Transaction receivedTransaciton = new Transaction(
-                        transferredUser.getId(),
-                        "Transfer",
-                        new BigDecimal(transferredAmount),
-                        null
-                );
+                Transaction receivedTransaction = new Transaction(transferredUser.getId(), "Transfer",
+                        new BigDecimal(transferAmount), null);
 
                 // update transfer user
-                transferredUser.setCurrentBalance(transferredUser.
-                        getCurrentBalance().add(BigDecimal.valueOf(transferredAmount)));
+                transferredUser.setCurrentBalance(transferredUser.getCurrentBalance().add(BigDecimal.valueOf(transferAmount)));
                 updateCurrentBalance(transferredUser);
 
                 // update user current balance
-                user.setCurrentBalance(user.
-                        getCurrentBalance().add(BigDecimal.valueOf(-transferredAmount)));
+                user.setCurrentBalance(user.getCurrentBalance().add(BigDecimal.valueOf(transferAmount)));
                 updateCurrentBalance(user);
 
                 // add these transactions to the database
-                addTransactionToDatabase(transfereTransaction);
-                addTransactionToDatabase(receivedTransaciton);
+                addTransactionToDatabase(transaction);
+                addTransactionToDatabase(receivedTransaction);
 
                 return true;
-
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -202,4 +193,43 @@ public class DBConnection {
 
         return false;
     }
+
+    // get all transactions (user for past transaction)
+    public static ArrayList<Transaction> getPastTransaction(User user) {
+        ArrayList<Transaction> pastTransactions = new ArrayList<>();
+        String query = "SELECT * FROM transaction WHERE user_id = ?";
+        try {
+            Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);
+            PreparedStatement selectAllTransactions = connection.prepareStatement(query);
+
+            selectAllTransactions.setInt(1, user.getId());
+
+            ResultSet resultSet = selectAllTransactions.executeQuery();
+
+            // iterate throught the results (if any)
+            while(resultSet.next()) {
+                // create transaction obj
+                Transaction transaction = new Transaction(
+                        user.getId(),
+                        resultSet.getString("transaction_type"),
+                        resultSet.getBigDecimal("transaction_amount"),
+                        resultSet.getDate("transaction_date")
+                        );
+
+                // store into array list
+                pastTransactions.add(transaction);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return pastTransactions;
+    }
 }
+
+
+
+
+
+
+
